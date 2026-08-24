@@ -45,6 +45,10 @@ mvn spring-boot:run
 - **Persistência em disco**: o catálogo sobrevive a reinícios do Hub
   (snapshot JSON, sem precisar de banco de dados).
 - **Documentação OpenAPI/Swagger** gerada automaticamente.
+- **Acesso pelo celular**: o dashboard detecta o IP da rede local e mostra
+  um QR code — basta escanear para abrir no celular.
+- **Pacotes nativos** (Windows `.exe`, macOS `.dmg`, Linux `.deb`/portátil),
+  com JRE embutida — quem for só usar não precisa instalar Java.
 
 ## Como um sistema se conecta ao Hub
 
@@ -143,21 +147,71 @@ na próxima inicialização (`archhub.persistence.enabled`, ligado por
 padrão). Não é um banco de dados — é um snapshot simples, suficiente para
 o Hub não esquecer o catálogo entre reinícios locais.
 
+## Acesso pelo celular
+
+O Hub sobe escutando em todas as interfaces de rede (não só `localhost`),
+então já é acessível de qualquer dispositivo na mesma rede. Para facilitar,
+o dashboard mostra automaticamente um botão **"📱 Ver no celular"** com:
+
+- o(s) endereço(s) de rede local detectados (`GET /api/v1/network`);
+- um QR code gerado no servidor (`GET /api/v1/network/qr.svg`), sem depender
+  de nenhuma biblioteca externa no navegador — basta escanear com a câmera
+  do celular para abrir o dashboard.
+
+O dashboard também é responsivo (grade de cards, abas com scroll horizontal,
+layout empilhado em telas pequenas) e pode ser "instalado" na tela inicial
+do celular como um atalho (PWA — `manifest.json` + ícones em `static/icons/`).
+
+Se nenhum endereço de rede local for encontrado (ex.: um container isolado
+com apenas loopback), o botão simplesmente não aparece.
+
+## Pacotes nativos (sem precisar instalar Java)
+
+Assim como o `ArchNexus.exe` do System-PVD e o `archmap.exe` do ArchMAP, o
+Arch Hub pode ser empacotado como um executável nativo autocontido — usando
+[`jpackage`](https://docs.oracle.com/en/java/javase/21/docs/specs/man/jpackage.html)
+(inclui a própria JRE, então quem for só rodar não precisa instalar Java):
+
+```bash
+# Linux/macOS — produz um app-image portátil + instalador nativo (.deb/.dmg)
+./scripts/build-package.sh
+
+# Windows (PowerShell) — produz um app-image + instalador .exe (requer WiX Toolset)
+powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1
+```
+
+Os artefatos saem em `dist-desktop/`. O binário aceita `--version` para um
+smoke test rápido sem subir o servidor inteiro (`ArchHub --version`).
+
+O workflow `.github/workflows/release.yml` builda os três pacotes (Windows,
+macOS, Linux) em CI e anexa numa release do GitHub sempre que uma tag
+`vX.Y.Z` é publicada (a versão precisa bater com a do `pom.xml` — rode
+`mvn versions:set -DnewVersion=X.Y.Z` antes de taguear). Sem tag, o mesmo
+workflow pode ser disparado manualmente (`Run workflow`) só para gerar os
+artifacts de teste.
+
 ## Estrutura do projeto
 
 ```
 src/main/java/dev/kauakgzin/archhub/
-├── ArchHubApplication.java
+├── ArchHubApplication.java   # main() também responde a --version
 ├── config/         # RestClient, Clock, OpenAPI e propriedades (health/security/persistence)
 ├── domain/         # RegisteredSystem, SystemStatus, SystemEvent, EventType
 ├── exception/
 ├── persistence/     # Snapshot em disco (SystemSnapshot, PersistenceService)
 ├── repository/      # SystemRegistry (catálogo em memória), EventLog (feed de atividade)
-├── service/          # RegistrationService, HealthCheckService, StatusMonitor
+├── service/          # RegistrationService, HealthCheckService, StatusMonitor,
+│                      # NetworkInfoService, QrCodeService (acesso pelo celular)
 └── web/               # Controllers REST, DTOs, filtro de autenticação, exception handler
 src/main/resources/
 ├── application.yml
-└── static/            # Dashboard (HTML/CSS/JS vanilla): sistemas, grafo de conexões, atividade
+└── static/            # Dashboard (HTML/CSS/JS vanilla), manifest.json e ícones (PWA)
+scripts/
+├── build-package.sh   # Empacota para Linux/macOS (jpackage)
+└── build-exe.ps1      # Empacota para Windows (jpackage + WiX)
+.github/workflows/
+├── ci.yml             # Testes em todo push/PR
+└── release.yml        # Builda e publica os pacotes nativos em tags vX.Y.Z
 ```
 
 ## Próximos passos (roadmap)

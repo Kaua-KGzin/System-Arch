@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Arch Hub</title>
+    <meta name="description" content="Painel central de controle e conexão dos sistemas do Arch Lab.">
+    <meta name="theme-color" content="#0f1115">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icons/icon-32.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -13,9 +18,20 @@
                 <h1>Arch Hub</h1>
                 <p>Painel central de controle e conexão dos sistemas do Arch Lab.</p>
             </div>
-            <a class="api-link" href="/swagger-ui.html" target="_blank" rel="noopener">API docs ↗</a>
+            <div class="header-actions">
+                <button id="mobile-toggle" class="mobile-toggle" hidden>📱 Ver no celular</button>
+                <a class="api-link" href="/swagger-ui.html" target="_blank" rel="noopener">API docs ↗</a>
+            </div>
         </div>
         <section id="stats" class="stats"></section>
+        <section id="mobile-panel" class="mobile-panel" hidden>
+            <img id="mobile-qr" alt="QR code para abrir o Arch Hub no celular">
+            <div>
+                <strong>Escaneie para abrir no celular</strong>
+                <p>Seu celular precisa estar na mesma rede Wi-Fi/local.</p>
+                <a id="mobile-url" class="mobile-url" target="_blank" rel="noopener"></a>
+            </div>
+        </section>
     </header>
 
     <main>

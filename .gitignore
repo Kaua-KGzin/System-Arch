@@ -28,3 +28,6 @@ target/
 
 ### Arch Hub runtime data ###
 data/
+
+### Native packaging output (scripts/build-package.sh, scripts/build-exe.ps1) ###
+dist-desktop/

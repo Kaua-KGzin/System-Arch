@@ -17,6 +17,10 @@ const els = {
     graph: document.getElementById("graph"),
     events: document.getElementById("events"),
     eventsEmpty: document.getElementById("events-empty"),
+    mobileToggle: document.getElementById("mobile-toggle"),
+    mobilePanel: document.getElementById("mobile-panel"),
+    mobileQr: document.getElementById("mobile-qr"),
+    mobileUrl: document.getElementById("mobile-url"),
 };
 
 async function fetchJson(path) {
@@ -217,6 +221,26 @@ function renderEvents() {
     `).join("");
 }
 
+// ---- Mobile access (QR code) ---------------------------------------------
+
+async function initMobileAccess() {
+    try {
+        const network = await fetchJson("/api/v1/network");
+        if (!network.primaryUrl) {
+            return;
+        }
+        els.mobileQr.src = "/api/v1/network/qr.svg";
+        els.mobileUrl.textContent = network.primaryUrl;
+        els.mobileUrl.href = network.primaryUrl;
+        els.mobileToggle.hidden = false;
+        els.mobileToggle.addEventListener("click", () => {
+            els.mobilePanel.hidden = !els.mobilePanel.hidden;
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
+
 // ---- Polling loop --------------------------------------------------------
 
 async function refresh() {
@@ -246,3 +270,4 @@ async function refresh() {
 
 refresh();
 setInterval(refresh, POLL_INTERVAL_MS);
+initMobileAccess();

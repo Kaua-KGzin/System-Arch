@@ -45,6 +45,13 @@ header p {
     color: var(--muted);
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
 .api-link {
     color: var(--accent);
     text-decoration: none;
@@ -54,6 +61,56 @@ header p {
 
 .api-link:hover {
     text-decoration: underline;
+}
+
+.mobile-toggle {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.mobile-toggle:hover {
+    border-color: var(--accent);
+}
+
+.mobile-panel {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.mobile-panel img {
+    width: 110px;
+    height: 110px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px;
+    flex-shrink: 0;
+}
+
+.mobile-panel strong {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.mobile-panel p {
+    margin: 0 0 0.4rem;
+}
+
+.mobile-url {
+    color: var(--accent);
+    font-size: 0.85rem;
+    word-break: break-all;
 }
 
 .stats {
@@ -94,6 +151,7 @@ main {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1.25rem;
+    overflow-x: auto;
 }
 
 .tab-button {
@@ -104,6 +162,7 @@ main {
     padding: 0.4rem 1rem;
     font-size: 0.85rem;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .tab-button:hover {
@@ -306,4 +365,31 @@ main {
 
 .empty-state {
     color: var(--muted);
+}
+
+@media (max-width: 640px) {
+    header {
+        padding: 1.25rem 1rem 0.75rem;
+    }
+
+    main {
+        padding: 1rem 1rem 1.5rem;
+    }
+
+    header h1 {
+        font-size: 1.4rem;
+    }
+
+    .mobile-panel {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
