@@ -13,7 +13,8 @@ class RegisteredSystemTest {
     private RegisteredSystem newSystem() {
         return new RegisteredSystem(
                 "archmap", "ArchMAP", "http://localhost:9000", "http://localhost:9000/health",
-                "Code review graph", List.of("python", "cli"), Instant.parse("2026-01-01T00:00:00Z")
+                "Code review graph", List.of("python", "cli"), List.of("system-pvd"),
+                Instant.parse("2026-01-01T00:00:00Z")
         );
     }
 

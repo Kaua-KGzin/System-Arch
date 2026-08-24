@@ -25,6 +25,12 @@ public record RegisterSystemRequest(
 
         String description,
 
-        List<String> tags
+        List<String> tags,
+
+        /**
+         * Ids of other systems this one talks to. Used to draw the
+         * connection graph; targets do not need to be registered yet.
+         */
+        List<String> connectsTo
 ) {
 }

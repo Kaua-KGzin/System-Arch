@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -35,13 +36,13 @@ class SystemControllerTest {
 
     private SystemResponse sampleResponse(String id) {
         return new SystemResponse(id, "System " + id, "http://localhost:9000", null,
-                "desc", List.of("java"), SystemStatus.UP, Instant.now(), Instant.now(), null);
+                "desc", List.of("java"), List.of(), SystemStatus.UP, Instant.now(), Instant.now(), null);
     }
 
     @Test
     void registerReturns201() throws Exception {
         RegisterSystemRequest request = new RegisterSystemRequest(
-                "system-pvd", "System PVD", "http://localhost:9000", null, "desc", List.of());
+                "system-pvd", "System PVD", "http://localhost:9000", null, "desc", List.of(), List.of());
         when(registrationService.register(any())).thenReturn(sampleResponse("system-pvd"));
 
         mockMvc.perform(post("/api/v1/systems")
@@ -54,7 +55,7 @@ class SystemControllerTest {
     @Test
     void registerWithBlankNameReturns400() throws Exception {
         RegisterSystemRequest request = new RegisterSystemRequest(
-                "system-pvd", "", "http://localhost:9000", null, null, null);
+                "system-pvd", "", "http://localhost:9000", null, null, null, null);
 
         mockMvc.perform(post("/api/v1/systems")
                         .contentType("application/json")
@@ -65,11 +66,22 @@ class SystemControllerTest {
 
     @Test
     void listReturnsAllSystems() throws Exception {
-        when(registrationService.list()).thenReturn(List.of(sampleResponse("archmap"), sampleResponse("simple-arch")));
+        when(registrationService.list(isNull(), isNull(), isNull()))
+                .thenReturn(List.of(sampleResponse("archmap"), sampleResponse("simple-arch")));
 
         mockMvc.perform(get("/api/v1/systems"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void listPassesFiltersThrough() throws Exception {
+        when(registrationService.list(eq("python"), eq(SystemStatus.UP), isNull()))
+                .thenReturn(List.of(sampleResponse("archmap")));
+
+        mockMvc.perform(get("/api/v1/systems").param("tag", "python").param("status", "UP"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test

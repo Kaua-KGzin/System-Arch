@@ -18,19 +18,22 @@ public class RegisteredSystem {
     private final String healthCheckUrl;
     private final String description;
     private final List<String> tags;
+    private final List<String> connectsTo;
     private final Instant registeredAt;
 
     private final AtomicReference<Instant> lastSeen = new AtomicReference<>();
     private final AtomicReference<String> lastError = new AtomicReference<>();
 
     public RegisteredSystem(String id, String name, String baseUrl, String healthCheckUrl,
-                             String description, List<String> tags, Instant registeredAt) {
+                             String description, List<String> tags, List<String> connectsTo,
+                             Instant registeredAt) {
         this.id = id;
         this.name = name;
         this.baseUrl = baseUrl;
         this.healthCheckUrl = healthCheckUrl;
         this.description = description;
         this.tags = tags;
+        this.connectsTo = connectsTo;
         this.registeredAt = registeredAt;
     }
 
@@ -73,6 +76,10 @@ public class RegisteredSystem {
 
     public List<String> getTags() {
         return tags;
+    }
+
+    public List<String> getConnectsTo() {
+        return connectsTo;
     }
 
     public Instant getRegisteredAt() {

@@ -8,14 +8,49 @@
 </head>
 <body>
     <header>
-        <h1>Arch Hub</h1>
-        <p>Painel central dos sistemas conectados (System-PVD, ArchMAP, SIMPLE-ArCh e outros).</p>
+        <div class="header-top">
+            <div>
+                <h1>Arch Hub</h1>
+                <p>Painel central de controle e conexão dos sistemas do Arch Lab.</p>
+            </div>
+            <a class="api-link" href="/swagger-ui.html" target="_blank" rel="noopener">API docs ↗</a>
+        </div>
+        <section id="stats" class="stats"></section>
     </header>
 
     <main>
-        <section id="summary" class="summary"></section>
-        <section id="systems" class="grid"></section>
-        <p id="empty-state" class="empty-state" hidden>Nenhum sistema registrado ainda. Veja o README para o passo a passo de registro.</p>
+        <nav class="tabs">
+            <button class="tab-button active" data-tab="systems">Sistemas</button>
+            <button class="tab-button" data-tab="graph">Conexões</button>
+            <button class="tab-button" data-tab="activity">Atividade</button>
+        </nav>
+
+        <section id="tab-systems" class="tab-panel active">
+            <div class="toolbar">
+                <input id="search" type="search" placeholder="Buscar por nome, id ou descrição...">
+                <select id="tag-filter">
+                    <option value="">Todas as tags</option>
+                </select>
+                <select id="status-filter">
+                    <option value="">Todos os status</option>
+                    <option value="UP">Online</option>
+                    <option value="DOWN">Offline</option>
+                    <option value="UNKNOWN">Desconhecido</option>
+                </select>
+            </div>
+            <section id="systems" class="grid"></section>
+            <p id="empty-state" class="empty-state" hidden>Nenhum sistema encontrado com esse filtro.</p>
+        </section>
+
+        <section id="tab-graph" class="tab-panel">
+            <p class="hint">Sistemas conectados entre si. Linhas tracejadas apontam para um sistema ainda não registrado.</p>
+            <svg id="graph" class="graph" viewBox="0 0 600 600"></svg>
+        </section>
+
+        <section id="tab-activity" class="tab-panel">
+            <ul id="events" class="events"></ul>
+            <p id="events-empty" class="empty-state" hidden>Nenhuma atividade registrada ainda.</p>
+        </section>
     </main>
 
     <script src="/js/dashboard.js"></script>

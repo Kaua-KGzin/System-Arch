@@ -25,3 +25,6 @@ target/
 ### macOS/Linux ###
 .DS_Store
 *.log
+
+### Arch Hub runtime data ###
+data/
