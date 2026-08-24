@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: arch-hub
+
+archhub:
+  health:
+    check-interval-ms: 15000
+    stale-after: 45s
+    timeout: 3s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
