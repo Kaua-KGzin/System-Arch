@@ -13,7 +13,7 @@
 
     <groupId>dev.kauakgzin.archhub</groupId>
     <artifactId>arch-hub</artifactId>
-    <version>0.0.1-beta</version>
+    <version>0.0.2-beta</version>
     <name>Arch Hub</name>
     <description>Registro e painel central de conexao entre os sistemas Arch (System-PVD, ArchMAP, SIMPLE-ArCh)</description>
 
