@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: arch-hub
+
+archhub:
+  health:
+    check-interval-ms: 15000
+    stale-after: 45s
+    timeout: 3s
+  security:
+    # Set ARCHHUB_SECURITY_TOKEN (or archhub.security.token) to require the
+    # X-Hub-Token header on register/heartbeat/deregister calls. Empty = open.
+    token: ${ARCHHUB_SECURITY_TOKEN:}
+  persistence:
+    enabled: true
+    file: data/systems.json
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
