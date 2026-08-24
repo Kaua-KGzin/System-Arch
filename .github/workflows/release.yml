@@ -1,0 +1,211 @@
+name: Release
+
+# Builda e publica pacotes nativos do Arch Hub para Windows, macOS e Linux
+# (jpackage embute a propria JRE - quem baixa nao precisa instalar Java).
+#
+#   mvn versions:set -DnewVersion=1.0.0        -> alinha o pom.xml com a tag
+#   git commit -am "Release 1.0.0"
+#   git tag v1.0.0 && git push origin main v1.0.0   -> testa, builda os 3 pacotes e cria a release
+#   Actions > Release > Run workflow                 -> so builda, anexa os pacotes como artifacts
+#
+# Os executaveis NAO sao assinados digitalmente. Windows/macOS podem exibir um
+# aviso na primeira execucao (ver .github/release-notes-template.md).
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: mvn -B test
+
+  version:
+    name: Resolver versao e notas da release
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Ler a versao do pom.xml
+        id: version
+        run: echo "version=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)" >> "$GITHUB_OUTPUT"
+
+      - name: Conferir que a tag bate com o pom.xml
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/v}"
+          pom_version="${{ steps.version.outputs.version }}"
+          if [ "$tag_version" != "$pom_version" ]; then
+            echo "::error::Tag v$tag_version nao bate com a versao do pom.xml ($pom_version). Rode 'mvn versions:set -DnewVersion=$tag_version' antes de taguear."
+            exit 1
+          fi
+
+      - name: Montar as notas da release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          changes="$(git for-each-ref "refs/tags/$GITHUB_REF_NAME" --format='%(contents)')"
+          if [ -z "$changes" ]; then
+            changes="_Sem notas para esta versao._"
+          fi
+          sed -e "s/{VERSION}/${{ steps.version.outputs.version }}/g" \
+              .github/release-notes-template.md > release-notes.tmp
+          python3 - "$changes" <<'PY'
+import sys, pathlib
+changes = sys.argv[1]
+path = pathlib.Path("release-notes.tmp")
+path.write_text(path.read_text().replace("{CHANGES}", changes.strip()))
+PY
+          mv release-notes.tmp release-notes.md
+
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: release-notes
+          path: release-notes.md
+          retention-days: 1
+
+  linux-package:
+    name: Pacote Linux (.deb / app-image)
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build
+        run: ./scripts/build-package.sh
+
+      - name: Empacotar o app-image portatil
+        run: tar -C dist-desktop -czf "dist-desktop/ArchHub-${{ needs.version.outputs.version }}-linux.tar.gz" ArchHub
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArchHub-${{ needs.version.outputs.version }}-linux
+          path: |
+            dist-desktop/*.tar.gz
+            dist-desktop/*.deb
+            dist-desktop/*.sha256
+          retention-days: 14
+
+      - name: Baixar as notas da release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Publicar na release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            dist-desktop/*.tar.gz
+            dist-desktop/*.deb
+            dist-desktop/*.sha256
+
+  macos-package:
+    name: Pacote macOS (.dmg)
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build
+        run: ./scripts/build-package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArchHub-${{ needs.version.outputs.version }}-macos
+          path: |
+            dist-desktop/*.dmg
+            dist-desktop/*.sha256
+          retention-days: 14
+
+      - name: Baixar as notas da release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Publicar na release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            dist-desktop/*.dmg
+            dist-desktop/*.sha256
+
+  windows-package:
+    name: Pacote Windows (.exe)
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Instalar o WiX Toolset
+        run: choco install wixtoolset -y
+
+      - name: Build
+        shell: pwsh
+        run: ./scripts/build-exe.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArchHub-${{ needs.version.outputs.version }}-windows
+          path: |
+            dist-desktop/*.exe
+            dist-desktop/*.sha256
+          retention-days: 14
+
+      - name: Baixar as notas da release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Publicar na release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            dist-desktop/*.exe
+            dist-desktop/*.sha256
