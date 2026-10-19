@@ -9,7 +9,7 @@ COPY src ./src
 COPY brand ./brand
 RUN mvn -q -B -DskipTests package && cp target/arch-hub-*.jar /arch-hub.jar
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 RUN addgroup -S archhub && adduser -S archhub -G archhub && mkdir -p /app/data && chown archhub:archhub /app/data
 COPY --from=build /arch-hub.jar /app/arch-hub.jar
