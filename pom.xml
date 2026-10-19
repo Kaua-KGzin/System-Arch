@@ -43,7 +43,7 @@
             <!-- Generates the "scan to open on your phone" QR code server-side; core module only, no AWT/Android deps. -->
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
-            <version>3.5.3</version>
+            <version>3.5.4</version>
         </dependency>
 
         <dependency>
