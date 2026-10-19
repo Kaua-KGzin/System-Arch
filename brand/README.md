@@ -33,7 +33,7 @@ Hoje:
 | Arch Hub    | dashboard inteiro (`src/main/resources/static`)                      |
 | SIMPLE-ArCh | painel "Linha Arch" + assinatura (`web/public/arch-mark.svg`)        |
 | System-PVD  | assinatura no rodapé da sidebar (`frontend/public/arch-mark.svg`)    |
-| ArchMAP     | ainda não — a UI tem paridade de i18n em 6 idiomas testada; entra num PR próprio |
+| ArchMAP     | marca no rodapé da barra lateral da web UI (`src/archmap/web-ui/static/arch-mark.svg`), tooltip nos 6 idiomas |
 
 Mudou um token? Edite `arch-line.css`, rode `python3 brand/build-tokens.py`
 para regenerar o JSON e copie para os produtos. No Hub, um teste
