@@ -1,0 +1,26 @@
+# Render Blueprint — Arch Hub (opção A do deploy/README.md).
+# Render → New → Blueprint → este repositório. O plano free dorme sem tráfego e não tem
+# disco persistente: o catálogo se refaz sozinho (os sistemas re-registram) e os scores
+# voltam no próximo `Arch line` (toda segunda e a cada push no main).
+services:
+  - type: web
+    name: arch-hub
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: SERVER_PORT
+        value: "8080"
+      # Cole aqui (no painel, não no git) a linha gerada por scripts/arch-line-setup.sh tokens.
+      - key: ARCHHUB_SYSTEM_TOKENS
+        sync: false
+      # Token admin (opcional): escreve qualquer sistema.
+      - key: ARCHHUB_SECURITY_TOKEN
+        sync: false
+      # URL pública do serviço (https://arch-hub-xxxx.onrender.com), para o auto-registro.
+      - key: ARCHHUB_PUBLIC_URL
+        sync: false

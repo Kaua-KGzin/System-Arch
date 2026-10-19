@@ -136,6 +136,9 @@ POST /api/v1/systems/{id}/architecture
 
 #### Configurando os secrets do CI
 
+> Passo a passo completo, com deploy do Hub (Render ou self-host) e um script que
+> faz tokens, secrets e verificação: [`deploy/README.md`](../deploy/README.md).
+
 O workflow `Arch line` roda nos runners do GitHub, então o Hub precisa estar
 **acessível pela internet** (um Hub em `localhost` não serve). Opções: subir a
 imagem Docker do Hub num servidor/VPS com HTTPS, ou expor um Hub local por um
