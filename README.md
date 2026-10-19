@@ -36,6 +36,8 @@ mvn spring-boot:run
 - **Monitoramento de status**: health check ativo (ping periódico) e/ou
   heartbeat manual, com status `UP` / `DOWN` / `UNKNOWN` calculado em
   tempo real.
+- **Score de arquitetura**: cada repositório da linha publica sua nota
+  (ArchMAP, via CI); o dashboard mostra nota, variação e tendência.
 - **Feed de atividade**: log dos últimos eventos (registro, remoção,
   sistema caiu, sistema voltou).
 - **Busca e filtros**: por tag, status ou texto livre (nome/id/descrição).
@@ -135,6 +137,9 @@ intervalo de checagem ativa (`archhub.health.check-interval-ms`, padrão
 | GET    | `/api/v1/connections`              | Grafo de conexões declaradas entre sistemas    |
 | GET    | `/api/v1/stats`                    | Contagem por status + total de conexões        |
 | GET    | `/api/v1/events?limit=50`          | Feed de atividade (mais recentes primeiro)     |
+| POST   | `/api/v1/systems/{id}/architecture`| Publica o score de arquitetura (ArchMAP)       |
+| GET    | `/api/v1/systems/{id}/architecture`| Histórico de scores de um sistema              |
+| GET    | `/api/v1/architecture`             | Último score de cada sistema da linha          |
 
 Todas as rotas `GET` são públicas. `POST`/`DELETE` em `/api/v1/systems/**`
 exigem o header `X-Hub-Token` **somente se** `archhub.security.token`
@@ -149,6 +154,13 @@ token nas operações de escrita, defina a variável de ambiente:
 ARCHHUB_SECURITY_TOKEN=um-segredo-forte mvn spring-boot:run
 ```
 
+Melhor ainda, **um token por sistema** — cada um só consegue escrever o
+próprio id (os outros recebem 403):
+
+```bash
+ARCHHUB_SYSTEM_TOKENS="system-pvd=s1,simple-arch=s2,archmap=s3" mvn spring-boot:run
+```
+
 E envie o header em toda chamada de registro/heartbeat/remoção:
 
 ```bash
@@ -158,9 +170,18 @@ curl -X POST http://localhost:8080/api/v1/systems \
   -d '{"id": "system-pvd", "name": "System PVD", "baseUrl": "http://localhost:5000"}'
 ```
 
+## Docker
+
+```bash
+docker build -t arch-hub .
+docker run -p 8080:8080 -v arch-hub-data:/app/data \
+  -e ARCHHUB_SYSTEM_TOKENS="system-pvd=s1,simple-arch=s2,archmap=s3" arch-hub
+```
+
 ## Persistência
 
-O catálogo é salvo em `data/systems.json` ao desligar o Hub e recarregado
+O catálogo é salvo em `data/systems.json` (e os scores de arquitetura em
+`data/architecture.json`) ao desligar o Hub e recarregado
 na próxima inicialização (`archhub.persistence.enabled`, ligado por
 padrão). Não é um banco de dados — é um snapshot simples, suficiente para
 o Hub não esquecer o catálogo entre reinícios locais.
@@ -224,6 +245,9 @@ src/main/java/dev/kauakgzin/archhub/
 src/main/resources/
 ├── application.yml
 └── static/            # Dashboard (HTML/CSS/JS vanilla), manifest.json e ícones (PWA)
+brand/                 # Identidade da linha Arch (marca, tokens CSS/JSON, guia)
+docs/ARCH-LINE.md      # Contrato da linha (protocolo, tokens, score, ordem de merge)
+Dockerfile             # Imagem do Hub (JRE 21, não-root, volume /app/data)
 scripts/
 ├── build-package.sh   # Empacota para Linux/macOS (jpackage)
 └── build-exe.ps1      # Empacota para Windows (jpackage + WiX)
@@ -236,8 +260,8 @@ scripts/
 
 - ~~Adaptadores de registro automático para os demais repositórios~~ —
   feito, ver [`docs/ARCH-LINE.md`](docs/ARCH-LINE.md).
-- Score de arquitetura do ArchMAP publicado no registro de cada sistema.
+- ~~Score de arquitetura do ArchMAP~~ — feito (`/api/v1/architecture`).
+- ~~Autenticação por sistema~~ — feito (`ARCHHUB_SYSTEM_TOKENS`).
 - Webhooks/notificações externas quando um sistema muda de status.
-- Autenticação por sistema (um token por serviço, não apenas um segredo global).
 - Trocar o snapshot em disco por um banco leve (ex. H2/SQLite) se o
   catálogo crescer muito.
