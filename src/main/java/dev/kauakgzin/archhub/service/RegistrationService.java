@@ -5,8 +5,10 @@ import dev.kauakgzin.archhub.domain.EventType;
 import dev.kauakgzin.archhub.domain.RegisteredSystem;
 import dev.kauakgzin.archhub.domain.SystemStatus;
 import dev.kauakgzin.archhub.exception.SystemNotFoundException;
+import dev.kauakgzin.archhub.repository.ArchitectureStore;
 import dev.kauakgzin.archhub.repository.EventLog;
 import dev.kauakgzin.archhub.repository.SystemRegistry;
+import dev.kauakgzin.archhub.web.dto.ArchitectureSummary;
 import dev.kauakgzin.archhub.web.dto.ConnectionResponse;
 import dev.kauakgzin.archhub.web.dto.RegisterSystemRequest;
 import dev.kauakgzin.archhub.web.dto.StatsResponse;
@@ -28,13 +30,17 @@ public class RegistrationService {
     private final HubProperties properties;
     private final Clock clock;
     private final EventLog eventLog;
+    private final ArchitectureStore architectureStore;
 
-    public RegistrationService(SystemRegistry registry, HubProperties properties, Clock clock, EventLog eventLog) {
+    public RegistrationService(SystemRegistry registry, HubProperties properties, Clock clock, EventLog eventLog,
+                               ArchitectureStore architectureStore) {
         this.registry = registry;
         this.properties = properties;
         this.clock = clock;
         this.eventLog = eventLog;
+        this.architectureStore = architectureStore;
     }
+
 
     public SystemResponse register(RegisterSystemRequest request) {
         Instant now = clock.instant();
@@ -130,7 +136,8 @@ public class RegistrationService {
     }
 
     private SystemResponse toResponse(RegisteredSystem system, Instant now) {
-        return SystemResponse.of(system, now, properties.staleAfter());
+        return SystemResponse.of(system, now, properties.staleAfter(),
+                ArchitectureSummary.of(architectureStore.history(system.getId())));
     }
 
     private boolean matches(RegisteredSystem system, String query) {

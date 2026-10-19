@@ -4,5 +4,6 @@ public enum EventType {
     REGISTERED,
     DEREGISTERED,
     WENT_UP,
-    WENT_DOWN
+    WENT_DOWN,
+    ARCHITECTURE_REPORTED
 }

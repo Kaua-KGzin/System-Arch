@@ -66,6 +66,45 @@ class ApiTokenFilterTest {
         verify(chain).doFilter(request, response);
     }
 
+    @Test
+    void systemTokenWritesOnlyItsOwnId() throws Exception {
+        HubSecurityProperties properties = new HubSecurityProperties(null, "archmap=map-secret, system-pvd=pvd-secret");
+        ApiTokenFilter filter = new ApiTokenFilter(properties, objectMapper);
+
+        MockHttpServletRequest own = postTo("/api/v1/systems/archmap/architecture");
+        own.addHeader("X-Hub-Token", "map-secret");
+        FilterChain ownChain = mock(FilterChain.class);
+        filter.doFilter(own, new MockHttpServletResponse(), ownChain);
+        verify(ownChain).doFilter(org.mockito.ArgumentMatchers.eq(own), org.mockito.ArgumentMatchers.any());
+
+        MockHttpServletRequest other = postTo("/api/v1/systems/system-pvd/heartbeat");
+        other.addHeader("X-Hub-Token", "map-secret");
+        MockHttpServletResponse otherResponse = new MockHttpServletResponse();
+        FilterChain otherChain = mock(FilterChain.class);
+        filter.doFilter(other, otherResponse, otherChain);
+        assertThat(otherResponse.getStatus()).isEqualTo(403);
+        verify(otherChain, never()).doFilter(other, otherResponse);
+    }
+
+    @Test
+    void systemTokenOnRegisterExposesAuthenticatedId() throws Exception {
+        ApiTokenFilter filter = new ApiTokenFilter(new HubSecurityProperties("admin", "archmap=map-secret"), objectMapper);
+        MockHttpServletRequest request = postTo("/api/v1/systems");
+        request.addHeader("X-Hub-Token", "map-secret");
+
+        filter.doFilter(request, new MockHttpServletResponse(), mock(FilterChain.class));
+
+        assertThat(request.getAttribute(ApiTokenFilter.AUTHENTICATED_SYSTEM)).isEqualTo("archmap");
+    }
+
+    @Test
+    void pathSystemIdExtraction() {
+        assertThat(ApiTokenFilter.pathSystemId("/api/v1/systems")).isNull();
+        assertThat(ApiTokenFilter.pathSystemId("/api/v1/systems/")).isNull();
+        assertThat(ApiTokenFilter.pathSystemId("/api/v1/systems/archmap")).isEqualTo("archmap");
+        assertThat(ApiTokenFilter.pathSystemId("/api/v1/systems/archmap/heartbeat")).isEqualTo("archmap");
+    }
+
     private MockHttpServletRequest postTo(String uri) {
         return new MockHttpServletRequest("POST", uri);
     }

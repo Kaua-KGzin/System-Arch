@@ -26,7 +26,12 @@ public class SystemController {
 
     @PostMapping
     @Operation(summary = "Registra (ou atualiza) um sistema")
-    public ResponseEntity<SystemResponse> register(@Valid @RequestBody RegisterSystemRequest request) {
+    public ResponseEntity<SystemResponse> register(
+            @Valid @RequestBody RegisterSystemRequest request,
+            @RequestAttribute(name = ApiTokenFilter.AUTHENTICATED_SYSTEM, required = false) String authenticatedSystem) {
+        if (authenticatedSystem != null && !authenticatedSystem.equals(request.id())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         SystemResponse response = registrationService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

@@ -3,8 +3,10 @@ package dev.kauakgzin.archhub.persistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.kauakgzin.archhub.config.HubPersistenceProperties;
+import dev.kauakgzin.archhub.domain.ArchitectureReport;
 import dev.kauakgzin.archhub.domain.RegisteredSystem;
 import dev.kauakgzin.archhub.domain.SystemStatus;
+import dev.kauakgzin.archhub.repository.ArchitectureStore;
 import dev.kauakgzin.archhub.repository.SystemRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,7 +26,7 @@ class PersistenceServiceTest {
     @Test
     void loadFromMissingFileReturnsEmptyList(@TempDir Path dir) {
         SystemRegistry registry = new SystemRegistry();
-        PersistenceService service = new PersistenceService(registry, new HubPersistenceProperties(true, null), objectMapper);
+        PersistenceService service = new PersistenceService(registry, new HubPersistenceProperties(true, null), objectMapper, new ArchitectureStore());
 
         assertThat(service.loadFrom(dir.resolve("does-not-exist.json"))).isEmpty();
     }
@@ -39,7 +41,7 @@ class PersistenceServiceTest {
         system.markSeen(lastSeen);
         registry.save(system);
 
-        PersistenceService service = new PersistenceService(registry, new HubPersistenceProperties(true, null), objectMapper);
+        PersistenceService service = new PersistenceService(registry, new HubPersistenceProperties(true, null), objectMapper, new ArchitectureStore());
         Path file = dir.resolve("systems.json");
 
         service.saveTo(file, registry.findAll());
@@ -65,7 +67,7 @@ class PersistenceServiceTest {
         system.markSeen(lastSeen);
         registry.save(system);
 
-        PersistenceService service = new PersistenceService(registry, new HubPersistenceProperties(true, null), objectMapper);
+        PersistenceService service = new PersistenceService(registry, new HubPersistenceProperties(true, null), objectMapper, new ArchitectureStore());
         Path file = dir.resolve("systems.json");
         service.saveTo(file, registry.findAll());
 
@@ -74,5 +76,35 @@ class PersistenceServiceTest {
         // Far past its stale window: should read back as DOWN, not UP.
         assertThat(reloaded.statusAt(lastSeen.plus(Duration.ofDays(1)), Duration.ofSeconds(45)))
                 .isEqualTo(SystemStatus.DOWN);
+    }
+
+    @Test
+    void architectureReportsRoundTripNewestFirst(@TempDir Path dir) {
+        ArchitectureStore store = new ArchitectureStore();
+        store.add("archmap", report(70));
+        store.add("archmap", report(82));
+        PersistenceService service = new PersistenceService(new SystemRegistry(),
+                new HubPersistenceProperties(true, null), objectMapper, store);
+        Path file = dir.resolve("architecture.json");
+
+        service.saveArchitecture(file);
+        ArchitectureStore reloaded = new ArchitectureStore();
+        new PersistenceService(new SystemRegistry(), new HubPersistenceProperties(true, null), objectMapper, reloaded)
+                .loadArchitecture(file);
+
+        assertThat(reloaded.history("archmap")).extracting(ArchitectureReport::score).containsExactly(82, 70);
+    }
+
+    @Test
+    void architectureFileSitsNextToSystemsSnapshot() {
+        PersistenceService service = new PersistenceService(new SystemRegistry(),
+                new HubPersistenceProperties(true, "data/systems.json"), objectMapper, new ArchitectureStore());
+
+        assertThat(service.architectureFile()).isEqualTo(Path.of("data/architecture.json"));
+    }
+
+    private static ArchitectureReport report(int score) {
+        return new ArchitectureReport(score, "B", 10, 0, 1, "abc123", "main", "1.5.0", null,
+                Instant.parse("2026-01-01T00:00:00Z"));
     }
 }
