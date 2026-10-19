@@ -196,8 +196,6 @@ sem usuários: só máquinas, com tokens por sistema.
 
 ## Evolução prevista
 
-- **ArchMAP na UI**: assinatura da linha na web UI do ArchMAP (exige
-  traduzir para os 6 idiomas que a UI mantém em paridade testada).
 - **Gate de arquitetura**: falhar o CI quando o score cair mais que N pontos
   em relação ao último publicado no Hub.
 - **Webhooks do Hub** quando um sistema muda de status.
