@@ -17,3 +17,21 @@ jobs:
           java-version: "21"
           cache: maven
       - run: mvn -B test
+
+  docker:
+    name: Imagem Docker
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build
+        run: docker build -t arch-hub:${{ github.sha }} .
+      - name: Smoke (sobe e responde no health)
+        run: |
+          docker run -d --name hub -p 8080:8080 arch-hub:${{ github.sha }}
+          for i in $(seq 1 60); do
+            curl -sf localhost:8080/actuator/health && exit 0
+            sleep 2
+          done
+          docker logs hub
+          exit 1

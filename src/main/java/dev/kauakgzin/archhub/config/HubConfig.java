@@ -3,8 +3,8 @@ package dev.kauakgzin.archhub.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.kauakgzin.archhub.web.ApiTokenFilter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.client.ClientHttpRequestFactories;
-import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,11 +33,11 @@ public class HubConfig {
 
     @Bean
     public RestClient healthCheckRestClient(HubProperties properties) {
-        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.DEFAULTS
+        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.defaults()
                 .withConnectTimeout(properties.timeout())
                 .withReadTimeout(properties.timeout());
 
-        ClientHttpRequestFactory requestFactory = ClientHttpRequestFactories.get(settings);
+        ClientHttpRequestFactory requestFactory = ClientHttpRequestFactoryBuilder.detect().build(settings);
 
         return RestClient.builder()
                 .requestFactory(requestFactory)
