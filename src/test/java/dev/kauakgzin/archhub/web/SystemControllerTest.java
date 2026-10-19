@@ -9,7 +9,7 @@ import dev.kauakgzin.archhub.web.dto.SystemResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -31,12 +31,12 @@ class SystemControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private RegistrationService registrationService;
 
     private SystemResponse sampleResponse(String id) {
         return new SystemResponse(id, "System " + id, "http://localhost:9000", null,
-                "desc", List.of("java"), List.of(), SystemStatus.UP, Instant.now(), Instant.now(), null);
+                "desc", List.of("java"), List.of(), SystemStatus.UP, Instant.now(), Instant.now(), null, null);
     }
 
     @Test
@@ -62,6 +62,30 @@ class SystemControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fields.name").exists());
+    }
+
+    @Test
+    void registerRejectsNonHttpBaseUrl() throws Exception {
+        RegisterSystemRequest request = new RegisterSystemRequest(
+                "evil", "Evil", "javascript:alert(1)", null, null, null, null);
+
+        mockMvc.perform(post("/api/v1/systems")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.baseUrl").exists());
+    }
+
+    @Test
+    void systemTokenCannotRegisterAnotherId() throws Exception {
+        RegisterSystemRequest request = new RegisterSystemRequest(
+                "system-pvd", "System PVD", "http://localhost:9000", null, null, null, null);
+
+        mockMvc.perform(post("/api/v1/systems")
+                        .requestAttr(ApiTokenFilter.AUTHENTICATED_SYSTEM, "archmap")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test

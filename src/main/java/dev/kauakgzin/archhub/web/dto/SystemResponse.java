@@ -18,10 +18,16 @@ public record SystemResponse(
         SystemStatus status,
         Instant registeredAt,
         Instant lastSeen,
-        String lastError
+        String lastError,
+        ArchitectureSummary architecture
 ) {
 
     public static SystemResponse of(RegisteredSystem system, Instant now, Duration staleAfter) {
+        return of(system, now, staleAfter, null);
+    }
+
+    public static SystemResponse of(RegisteredSystem system, Instant now, Duration staleAfter,
+                                    ArchitectureSummary architecture) {
         return new SystemResponse(
                 system.getId(),
                 system.getName(),
@@ -33,7 +39,8 @@ public record SystemResponse(
                 system.statusAt(now, staleAfter),
                 system.getRegisteredAt(),
                 system.getLastSeen(),
-                system.getLastError()
+                system.getLastError(),
+                architecture
         );
     }
 }

@@ -1,0 +1,24 @@
+{
+  "name": "arch-line",
+  "version": 1,
+  "tokens": {
+    "violet": "#8b5cf6",
+    "indigo": "#6c41fc",
+    "blue": "#3b82f6",
+    "gradient": "linear-gradient(135deg, var(--arch-violet) 0%, var(--arch-indigo) 45%, var(--arch-blue) 100%)",
+    "role-platform": "#8b5cf6",
+    "role-business": "#550cc5",
+    "role-collaboration": "#3b82f6",
+    "role-insight": "#5b6cf0",
+    "status-up": "#2fbf71",
+    "status-down": "#e5484d",
+    "status-unknown": "#a1a8b8",
+    "grade-a": "#2fbf71",
+    "grade-b": "#7cc46a",
+    "grade-c": "#e5b53a",
+    "grade-d": "#f08c3a",
+    "grade-f": "#e5484d",
+    "radius": "10px",
+    "font": "\"Manrope\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif"
+  }
+}

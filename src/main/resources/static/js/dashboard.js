@@ -4,6 +4,7 @@ const state = {
     systems: [],
     connections: [],
     events: [],
+    architecture: [],
     filters: { q: "", tag: "", status: "" },
 };
 
@@ -16,12 +17,26 @@ const els = {
     statusFilter: document.getElementById("status-filter"),
     graph: document.getElementById("graph"),
     events: document.getElementById("events"),
+    architecture: document.getElementById("architecture"),
+    architectureEmpty: document.getElementById("architecture-empty"),
     eventsEmpty: document.getElementById("events-empty"),
     mobileToggle: document.getElementById("mobile-toggle"),
     mobilePanel: document.getElementById("mobile-panel"),
     mobileQr: document.getElementById("mobile-qr"),
     mobileUrl: document.getElementById("mobile-url"),
 };
+
+// Everything below comes from systems that registered themselves (the Hub may be
+// open), so it is untrusted: escape every value and only link http(s) URLs.
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[ch]);
+}
+
+function safeUrl(url) {
+    return /^https?:\/\//i.test(url ?? "") ? url : null;
+}
 
 async function fetchJson(path) {
     const response = await fetch(path);
@@ -74,7 +89,7 @@ function populateTagOptions(systems) {
     const currentValue = els.tagFilter.value;
     const tags = [...new Set(systems.flatMap((s) => s.tags || []))].sort();
     els.tagFilter.innerHTML = '<option value="">Todas as tags</option>' +
-        tags.map((tag) => `<option value="${tag}">${tag}</option>`).join("");
+        tags.map((tag) => `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`).join("");
     els.tagFilter.value = tags.includes(currentValue) ? currentValue : "";
 }
 
@@ -91,23 +106,81 @@ function applyFilters(systems) {
     });
 }
 
+function plural(count, one, many) {
+    const n = Number(count) || 0;
+    return `${n} ${n === 1 ? one : many}`;
+}
+
+function tagHtml(tag) {
+    const role = tag.startsWith("role:") ? ` role role-${escapeHtml(tag.slice(5))}` : "";
+    return `<span class="tag${role}">${escapeHtml(tag)}</span>`;
+}
+
+function sparkline(trend) {
+    if (!trend || trend.length < 2) return "";
+    const width = 80;
+    const height = 20;
+    const step = width / (trend.length - 1);
+    // Scale to the trend's own range (min 10 points) so small moves stay visible.
+    const min = Math.min(...trend);
+    const range = Math.max(Math.max(...trend) - min, 10);
+    const y = (score) => (height - 2 - ((score - min) / range) * (height - 4)).toFixed(1);
+    const points = trend.map((score, i) => `${(i * step).toFixed(1)},${y(score)}`);
+    return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" aria-hidden="true">
+        <polyline points="${points.join(" ")}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+}
+
+function architectureHtml(architecture) {
+    if (!architecture || !architecture.latest) return "";
+    const latest = architecture.latest;
+    const grade = escapeHtml((latest.grade || "?").toLowerCase());
+    const delta = architecture.delta == null || architecture.delta === 0 ? ""
+        : `<span class="delta ${architecture.delta > 0 ? "up" : "down"}">${architecture.delta > 0 ? "▲" : "▼"}${Math.abs(architecture.delta)}</span>`;
+    const report = safeUrl(latest.reportUrl);
+    const label = `${Number(latest.score)}/100 ${escapeHtml(latest.grade || "")}`;
+    return `
+        <div class="architecture">
+            <span class="grade grade-${grade}" title="Score de arquitetura (ArchMAP)">${report
+                ? `<a href="${escapeHtml(report)}" target="_blank" rel="noopener">${label}</a>` : label}</span>
+            ${delta}${sparkline(architecture.trend)}
+            <span class="architecture-meta">${plural(latest.files, "arquivo", "arquivos")} · ${plural(latest.cycles, "ciclo", "ciclos")} · ${formatRelativeTime(latest.analyzedAt)}</span>
+        </div>`;
+}
+
 function renderCard(system) {
     const card = document.createElement("article");
     card.className = "card";
 
-    const tags = (system.tags || []).map((tag) => `<span class="tag">${tag}</span>`).join("");
+    const tags = (system.tags || []).map(tagHtml).join("");
+    const url = safeUrl(system.baseUrl);
+    const status = escapeHtml(system.status.toLowerCase());
 
     card.innerHTML = `
         <div class="card-header">
-            <h2>${system.name}</h2>
-            <span class="badge ${system.status.toLowerCase()}">${system.status}</span>
+            <h2>${escapeHtml(system.name)}</h2>
+            <span class="badge ${status}">${escapeHtml(system.status)}</span>
         </div>
-        <p><a href="${system.baseUrl}" target="_blank" rel="noopener">${system.baseUrl}</a></p>
-        <p>${system.description ?? ""}</p>
+        <p>${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>` : escapeHtml(system.baseUrl)}</p>
+        <p>${escapeHtml(system.description)}</p>
+        ${architectureHtml(system.architecture)}
         <p>Último sinal: ${formatRelativeTime(system.lastSeen)}</p>
         <div class="tags">${tags}</div>
     `;
     return card;
+}
+
+function renderArchitecture() {
+    els.architectureEmpty.hidden = state.architecture.length > 0;
+    els.architecture.innerHTML = state.architecture.map((entry) => `
+        <article class="card">
+            <div class="card-header">
+                <h2>${escapeHtml(entry.systemId)}</h2>
+                <span class="badge ${entry.registered ? "up" : "unknown"}">${entry.registered ? "no Hub" : "só CI"}</span>
+            </div>
+            ${architectureHtml(entry.architecture)}
+            <p class="hint">${escapeHtml(entry.architecture.latest.ref || "")} ${escapeHtml((entry.architecture.latest.commit || "").slice(0, 7))}</p>
+        </article>
+    `).join("");
 }
 
 function renderSystems() {
@@ -208,14 +281,15 @@ const EVENT_LABELS = {
     DEREGISTERED: "Remoção",
     WENT_UP: "Ficou online",
     WENT_DOWN: "Ficou offline",
+    ARCHITECTURE_REPORTED: "Arquitetura",
 };
 
 function renderEvents() {
     els.eventsEmpty.hidden = state.events.length > 0;
     els.events.innerHTML = state.events.map((event) => `
-        <li class="event ${event.type.toLowerCase()}">
+        <li class="event ${escapeHtml(event.type.toLowerCase())}">
             <span class="dot"></span>
-            <span class="message"><strong>${EVENT_LABELS[event.type] ?? event.type}</strong> · ${event.message}</span>
+            <span class="message"><strong>${escapeHtml(EVENT_LABELS[event.type] ?? event.type)}</strong> · ${escapeHtml(event.message)}</span>
             <span class="time">${formatRelativeTime(event.occurredAt)}</span>
         </li>
     `).join("");
@@ -245,21 +319,24 @@ async function initMobileAccess() {
 
 async function refresh() {
     try {
-        const [systems, connections, events, stats] = await Promise.all([
+        const [systems, connections, events, stats, architecture] = await Promise.all([
             fetchJson("/api/v1/systems"),
             fetchJson("/api/v1/connections"),
             fetchJson("/api/v1/events?limit=30"),
             fetchJson("/api/v1/stats"),
+            fetchJson("/api/v1/architecture"),
         ]);
 
         state.systems = systems;
         state.connections = connections;
         state.events = events;
+        state.architecture = architecture;
 
         renderStats(stats);
         populateTagOptions(systems);
         renderSystems();
         renderEvents();
+        renderArchitecture();
         if (document.getElementById("tab-graph").classList.contains("active")) {
             renderGraph();
         }

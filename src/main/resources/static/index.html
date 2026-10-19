@@ -6,6 +6,7 @@
     <title>Arch Hub</title>
     <meta name="description" content="Painel central de controle e conexão dos sistemas do Arch Lab.">
     <meta name="theme-color" content="#0f1115">
+    <link rel="stylesheet" href="/brand/arch-line.css">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="/icons/icon-32.png">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -14,9 +15,12 @@
 <body>
     <header>
         <div class="header-top">
-            <div>
-                <h1>Arch Hub</h1>
-                <p>Painel central de controle e conexão dos sistemas do Arch Lab.</p>
+            <div class="brand">
+                <img src="/brand/arch-mark.svg" alt="" width="40" height="40">
+                <div>
+                    <h1>Arch Hub</h1>
+                    <p>Painel central da linha Arch — status, conexões e arquitetura de cada sistema.</p>
+                </div>
             </div>
             <div class="header-actions">
                 <button id="mobile-toggle" class="mobile-toggle" hidden>📱 Ver no celular</button>
@@ -38,6 +42,7 @@
         <nav class="tabs">
             <button class="tab-button active" data-tab="systems">Sistemas</button>
             <button class="tab-button" data-tab="graph">Conexões</button>
+            <button class="tab-button" data-tab="architecture">Arquitetura</button>
             <button class="tab-button" data-tab="activity">Atividade</button>
         </nav>
 
@@ -61,6 +66,12 @@
         <section id="tab-graph" class="tab-panel">
             <p class="hint">Sistemas conectados entre si. Linhas tracejadas apontam para um sistema ainda não registrado.</p>
             <svg id="graph" class="graph" viewBox="0 0 600 600"></svg>
+        </section>
+
+        <section id="tab-architecture" class="tab-panel">
+            <p class="hint">Score de arquitetura publicado pelo ArchMAP (<code>archmap hub-report</code>, normalmente no CI de cada repositório).</p>
+            <section id="architecture" class="grid"></section>
+            <p id="architecture-empty" class="empty-state" hidden>Nenhum score publicado ainda. Rode <code>archmap hub-report</code> em um repositório da linha.</p>
         </section>
 
         <section id="tab-activity" class="tab-panel">

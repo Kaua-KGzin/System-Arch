@@ -14,9 +14,17 @@ archhub:
     # Set ARCHHUB_SECURITY_TOKEN (or archhub.security.token) to require the
     # X-Hub-Token header on register/heartbeat/deregister calls. Empty = open.
     token: ${ARCHHUB_SECURITY_TOKEN:}
+    # One token per system ("system-pvd=abc,archmap=def"). Each one may only
+    # write its own id, so a leaked token can't touch the rest of the line.
+    system-tokens: ${ARCHHUB_SYSTEM_TOKENS:}
   persistence:
     enabled: true
     file: data/systems.json
+  # The Hub lists itself as "arch-hub", the target of every system's connectsTo.
+  self-register:
+    enabled: true
+    # Address other machines use to reach the Hub. Empty = http://localhost:<port>.
+    public-url: ${ARCHHUB_PUBLIC_URL:}
 
 management:
   endpoints:

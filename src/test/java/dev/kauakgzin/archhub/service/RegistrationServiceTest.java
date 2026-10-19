@@ -4,6 +4,7 @@ import dev.kauakgzin.archhub.config.HubProperties;
 import dev.kauakgzin.archhub.domain.EventType;
 import dev.kauakgzin.archhub.domain.SystemStatus;
 import dev.kauakgzin.archhub.exception.SystemNotFoundException;
+import dev.kauakgzin.archhub.repository.ArchitectureStore;
 import dev.kauakgzin.archhub.repository.EventLog;
 import dev.kauakgzin.archhub.repository.SystemRegistry;
 import dev.kauakgzin.archhub.web.dto.ConnectionResponse;
@@ -33,7 +34,7 @@ class RegistrationServiceTest {
     @BeforeEach
     void setUp() {
         HubProperties properties = new HubProperties(15000, Duration.ofSeconds(45), Duration.ofSeconds(3));
-        service = new RegistrationService(registry, properties, clock, eventLog);
+        service = new RegistrationService(registry, properties, clock, eventLog, new ArchitectureStore());
     }
 
     private RegisterSystemRequest requestFor(String id) {
@@ -69,7 +70,7 @@ class RegistrationServiceTest {
         service.register(requestFor("archmap"));
         Clock laterClock = Clock.fixed(fixedNow.plusSeconds(3600), ZoneOffset.UTC);
         RegistrationService laterService = new RegistrationService(registry,
-                new HubProperties(0, null, null), laterClock, eventLog);
+                new HubProperties(0, null, null), laterClock, eventLog, new ArchitectureStore());
 
         SystemResponse response = laterService.register(requestFor("archmap"));
 

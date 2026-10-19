@@ -1,0 +1,48 @@
+/*
+ * Arch line — shared design tokens (v1).
+ * Source of truth: System-Arch/brand/arch-line.css. Products vendor a copy;
+ * edit here first, then copy. Only the line signature lives here: each product
+ * keeps its own palette, typography and layout.
+ */
+:root {
+  /* Line signature: violet -> blue, the spectrum every Arch product already uses. */
+  --arch-violet: #8b5cf6;
+  --arch-indigo: #6c41fc;
+  --arch-blue: #3b82f6;
+  --arch-gradient: linear-gradient(135deg, var(--arch-violet) 0%, var(--arch-indigo) 45%, var(--arch-blue) 100%);
+
+  /* Role accents (tag role:<papel> in the Hub). */
+  --arch-role-platform: #8b5cf6;
+  --arch-role-business: #550cc5;
+  --arch-role-collaboration: #3b82f6;
+  --arch-role-insight: #5b6cf0;
+
+  /* Status — same meaning and color in every product of the line. */
+  --arch-status-up: #2fbf71;
+  --arch-status-down: #e5484d;
+  --arch-status-unknown: #a1a8b8;
+
+  /* Architecture grades (ArchMAP score). */
+  --arch-grade-a: #2fbf71;
+  --arch-grade-b: #7cc46a;
+  --arch-grade-c: #e5b53a;
+  --arch-grade-d: #f08c3a;
+  --arch-grade-f: #e5484d;
+
+  --arch-radius: 10px;
+  --arch-font: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* "Parte da linha Arch" signature: mark + label, used in footers/sidebars. */
+.arch-signature {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+  color: inherit;
+  text-decoration: none;
+}
+.arch-signature:hover { opacity: 1; }
+.arch-signature img { width: 16px; height: 16px; }

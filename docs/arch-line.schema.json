@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Kaua-KGzin/System-Arch/main/docs/arch-line.schema.json",
+  "title": "Arch Line system manifest (arch.json)",
+  "type": "object",
+  "required": ["line", "protocol", "id", "name", "role", "runtime", "connectsTo"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "line": { "const": "arch" },
+    "protocol": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62})$" },
+    "name": { "type": "string", "minLength": 1 },
+    "role": { "enum": ["platform", "business", "collaboration", "insight"] },
+    "description": { "type": "string" },
+    "repository": { "type": "string", "format": "uri" },
+    "stack": { "type": "array", "items": { "type": "string" } },
+    "runtime": { "enum": ["service", "cli+service", "desktop", "serverless"] },
+    "defaultPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "health": { "type": "string", "pattern": "^/" },
+    "connectsTo": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "adapter": { "type": "string" }
+  },
+  "additionalProperties": false
+}
