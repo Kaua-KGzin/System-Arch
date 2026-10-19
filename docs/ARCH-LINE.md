@@ -134,6 +134,45 @@ POST /api/v1/systems/{id}/architecture
   Secrets opcionais em cada repo: `ARCHHUB_URL` (um Hub alcançável pelos
   runners do GitHub) e `ARCHHUB_TOKEN`. Sem eles, o score vai só para o resumo do job.
 
+#### Configurando os secrets do CI
+
+O workflow `Arch line` roda nos runners do GitHub, então o Hub precisa estar
+**acessível pela internet** (um Hub em `localhost` não serve). Opções: subir a
+imagem Docker do Hub num servidor/VPS com HTTPS, ou expor um Hub local por um
+túnel (Cloudflare Tunnel, ngrok).
+
+1. No Hub, um token por sistema:
+
+   ```bash
+   # gere 4 segredos fortes
+   for id in arch-hub system-pvd simple-arch archmap; do echo "$id=$(openssl rand -hex 24)"; done
+   # e suba o Hub com eles (uma linha, separados por vírgula)
+   ARCHHUB_SYSTEM_TOKENS="arch-hub=…,system-pvd=…,simple-arch=…,archmap=…"
+   ```
+
+2. Em cada repositório, os dois secrets (Settings → Secrets and variables →
+   Actions → New repository secret), ou pelo `gh`:
+
+   | Repositório  | `ARCHHUB_URL`              | `ARCHHUB_TOKEN`          |
+   |--------------|----------------------------|--------------------------|
+   | System-Arch  | URL pública do Hub         | token do `arch-hub`      |
+   | System-PVD   | URL pública do Hub         | token do `system-pvd`    |
+   | SIMPLE-ArCh  | URL pública do Hub         | token do `simple-arch`   |
+   | ArchMAP      | URL pública do Hub         | token do `archmap`       |
+
+   ```bash
+   gh secret set ARCHHUB_URL   --repo Kaua-KGzin/System-PVD --body "https://hub.exemplo.com"
+   gh secret set ARCHHUB_TOKEN --repo Kaua-KGzin/System-PVD   # cola o token quando pedir
+   ```
+
+3. Teste: Actions → **Arch line** → *Run workflow*. O resumo do job mostra a
+   nota e "published to …"; a aba **Arquitetura** do Hub passa a listá-la.
+
+Os mesmos `ARCHHUB_URL`/`ARCHHUB_TOKEN` (como variáveis de ambiente, não
+secrets do GitHub) ligam o registro em runtime: no `.env` do PVD, nas
+Environment Variables do projeto SIMPLE-ArCh na Vercel e no ambiente onde roda
+`archmap serve`.
+
 ### 7. Consumindo a linha
 
 Um sistema pode **mostrar** a linha lendo o Hub (`/api/v1/systems` +
