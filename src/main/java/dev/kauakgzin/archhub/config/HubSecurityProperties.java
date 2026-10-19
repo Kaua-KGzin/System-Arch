@@ -56,15 +56,21 @@ public record HubSecurityProperties(String token, String systemTokens) {
         }
         for (String pair : systemTokens.split(",")) {
             int eq = pair.indexOf('=');
-            if (eq > 0 && eq < pair.length() - 1) {
-                result.put(pair.substring(0, eq).trim(), pair.substring(eq + 1).trim());
+            if (eq < 0) {
+                continue;
+            }
+            String id = pair.substring(0, eq).trim();
+            String token = pair.substring(eq + 1).trim();
+            // "archmap= " must not turn an empty X-Hub-Token header into archmap's credential.
+            if (!id.isEmpty() && !token.isEmpty()) {
+                result.put(id, token);
             }
         }
         return result;
     }
 
     private static boolean constantTimeEquals(String expected, String provided) {
-        if (provided == null) {
+        if (provided == null || provided.isEmpty()) {
             return false;
         }
         return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), provided.getBytes(StandardCharsets.UTF_8));

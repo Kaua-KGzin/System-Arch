@@ -105,6 +105,59 @@ class ApiTokenFilterTest {
         assertThat(ApiTokenFilter.pathSystemId("/api/v1/systems/archmap/heartbeat")).isEqualTo("archmap");
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "/api/v1/systems;v=1/system-pvd/heartbeat",
+            "/api/v1;x/systems/system-pvd",
+            "/api;x/v1/systems/system-pvd/heartbeat"})
+    void matrixParametersCannotBypassTheTokenCheck(String uri) throws Exception {
+        ApiTokenFilter filter = new ApiTokenFilter(new HubSecurityProperties("admin", "archmap=map-secret"), objectMapper);
+        for (String token : new String[]{null, "map-secret"}) {
+            MockHttpServletRequest request = new MockHttpServletRequest("DELETE", uri);
+            if (token != null) {
+                request.addHeader("X-Hub-Token", token);
+            }
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            FilterChain chain = mock(FilterChain.class);
+
+            filter.doFilter(request, response, chain);
+
+            assertThat(response.getStatus()).isEqualTo(400);
+            verify(chain, never()).doFilter(request, response);
+        }
+    }
+
+    @Test
+    void systemTokenCannotWriteOutsideItsOwnId() throws Exception {
+        ApiTokenFilter filter = new ApiTokenFilter(new HubSecurityProperties(null, "archmap=map-secret"), objectMapper);
+        // "//" collapses to an id-less path: not register, not archmap's own path -> fail closed.
+        for (String uri : new String[]{"/api/v1/systems//system-pvd/heartbeat", "/api/v1/systems/%73ystem-pvd/heartbeat"}) {
+            MockHttpServletRequest request = postTo(uri);
+            request.addHeader("X-Hub-Token", "map-secret");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            filter.doFilter(request, response, mock(FilterChain.class));
+
+            assertThat(response.getStatus()).as(uri).isEqualTo(403);
+        }
+    }
+
+    @Test
+    void blankSystemTokenIsIgnoredAndEmptyHeaderNeverAuthenticates() throws Exception {
+        HubSecurityProperties properties = new HubSecurityProperties(null, "archmap= , system-pvd=pvd-secret");
+        assertThat(properties.parsedSystemTokens()).containsOnlyKeys("system-pvd");
+        assertThat(properties.systemFor("")).isNull();
+
+        ApiTokenFilter filter = new ApiTokenFilter(properties, objectMapper);
+        MockHttpServletRequest request = postTo("/api/v1/systems/archmap/heartbeat");
+        request.addHeader("X-Hub-Token", "");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, mock(FilterChain.class));
+
+        assertThat(response.getStatus()).isEqualTo(401);
+    }
+
     private MockHttpServletRequest postTo(String uri) {
         return new MockHttpServletRequest("POST", uri);
     }

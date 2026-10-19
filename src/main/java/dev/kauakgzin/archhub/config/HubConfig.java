@@ -26,7 +26,9 @@ public class HubConfig {
     public FilterRegistrationBean<ApiTokenFilter> apiTokenFilter(HubSecurityProperties properties, ObjectMapper objectMapper) {
         FilterRegistrationBean<ApiTokenFilter> registration = new FilterRegistrationBean<>(
                 new ApiTokenFilter(properties, objectMapper));
-        registration.addUrlPatterns("/api/v1/systems/*");
+        // Whole API: the filter itself decides on the normalized path, so container-level
+        // path matching (and its handling of ";params") can't decide what gets checked.
+        registration.addUrlPatterns("/api/*");
         registration.setOrder(1);
         return registration;
     }

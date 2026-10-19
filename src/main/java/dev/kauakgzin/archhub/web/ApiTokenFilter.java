@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -34,7 +35,8 @@ public class ApiTokenFilter extends OncePerRequestFilter {
     public static final String AUTHENTICATED_SYSTEM = "archhub.authenticatedSystem";
 
     private static final String HEADER = "X-Hub-Token";
-    private static final String SYSTEMS_PREFIX = "/api/v1/systems/";
+    private static final String SYSTEMS_ROOT = "/api/v1/systems";
+    private static final String SYSTEMS_PREFIX = SYSTEMS_ROOT + "/";
     private static final Set<String> PROTECTED_METHODS = Set.of(
             HttpMethod.POST.name(), HttpMethod.PUT.name(), HttpMethod.DELETE.name(), HttpMethod.PATCH.name());
 
@@ -50,7 +52,21 @@ public class ApiTokenFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-        if (!requiresToken(request)) {
+        if (!properties.enabled() || !PROTECTED_METHODS.contains(request.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        // Spring MVC routes on the normalized path (";params" stripped, %-decoded, "//" collapsed),
+        // so authorization must decide on that same path. Deciding on the raw URI let
+        // "/api/v1;x/systems/{id}" skip the token entirely and "/api/v1/systems;x/{id}/..." escape
+        // the per-system check. Writes never need matrix params: refuse them outright.
+        if (request.getRequestURI().indexOf(';') >= 0) {
+            reject(response, HttpServletResponse.SC_BAD_REQUEST, "Path parameters (;) are not accepted on write requests");
+            return;
+        }
+        String path = UrlPathHelper.defaultInstance.getLookupPathForRequest(request);
+        if (!isSystemsPath(path)) {
             chain.doFilter(request, response);
             return;
         }
@@ -67,9 +83,13 @@ public class ApiTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        String pathId = pathSystemId(request.getRequestURI());
-        if (pathId != null && !pathId.equals(system)) {
-            reject(response, HttpServletResponse.SC_FORBIDDEN, "Token of '%s' cannot modify '%s'".formatted(system, pathId));
+        // A system token may register (POST /api/v1/systems, body id checked by the controller)
+        // or write under its own id — nothing else. Unknown shapes fail closed.
+        String pathId = pathSystemId(path);
+        boolean register = SYSTEMS_ROOT.equals(path);
+        if (!register && !system.equals(pathId)) {
+            reject(response, HttpServletResponse.SC_FORBIDDEN,
+                    "Token of '%s' cannot modify '%s'".formatted(system, pathId == null ? path : pathId));
             return;
         }
         request.setAttribute(AUTHENTICATED_SYSTEM, system);
@@ -96,9 +116,7 @@ public class ApiTokenFilter extends OncePerRequestFilter {
         ));
     }
 
-    private boolean requiresToken(HttpServletRequest request) {
-        return properties.enabled()
-                && request.getRequestURI().startsWith("/api/v1/systems")
-                && PROTECTED_METHODS.contains(request.getMethod());
+    private static boolean isSystemsPath(String path) {
+        return SYSTEMS_ROOT.equals(path) || path.startsWith(SYSTEMS_PREFIX);
     }
 }
