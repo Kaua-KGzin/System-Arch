@@ -172,6 +172,9 @@ curl -X POST http://localhost:8080/api/v1/systems \
 
 ## Docker
 
+Para pôr o Hub no ar de verdade (Render ou self-host com HTTPS) e ligar o CI dos
+4 repositórios, siga [`deploy/README.md`](deploy/README.md).
+
 ```bash
 docker build -t arch-hub .
 docker run -p 8080:8080 -v arch-hub-data:/app/data \

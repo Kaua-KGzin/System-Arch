@@ -1,0 +1,46 @@
+# Arch Hub em máquina própria ou VPS (opção B do deploy/README.md).
+#
+#   cp .env.example .env   # preencha
+#   docker compose up -d                       # Hub em http://localhost:8080
+#   docker compose --profile tunnel up -d      # + Cloudflare Tunnel (URL pública HTTPS)
+#   docker compose --profile caddy up -d       # + Caddy com HTTPS automático (VPS com domínio)
+services:
+  hub:
+    build: ../..
+    image: arch-hub:local
+    restart: unless-stopped
+    environment:
+      ARCHHUB_SYSTEM_TOKENS: ${ARCHHUB_SYSTEM_TOKENS:?gere com scripts/arch-line-setup.sh tokens}
+      ARCHHUB_SECURITY_TOKEN: ${ARCHHUB_SECURITY_TOKEN:-}
+      ARCHHUB_PUBLIC_URL: ${ARCHHUB_PUBLIC_URL:-}
+    ports:
+      - "${HUB_PORT:-8080}:8080"
+    volumes:
+      - hub-data:/app/data
+
+  # Túnel nomeado da Cloudflare: URL fixa (ex.: https://hub.seudominio.com) sem abrir portas.
+  # Crie o túnel em one.dash.cloudflare.com → Networks → Tunnels, aponte o hostname para
+  # http://hub:8080 e cole o token em CLOUDFLARE_TUNNEL_TOKEN.
+  tunnel:
+    profiles: [tunnel]
+    image: cloudflare/cloudflared:2024.12.2
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on: [hub]
+
+  # VPS com domínio apontando para o IP: HTTPS automático (Let's Encrypt).
+  caddy:
+    profiles: [caddy]
+    image: caddy:2.8
+    restart: unless-stopped
+    command: caddy reverse-proxy --from ${HUB_DOMAIN:-localhost} --to hub:8080
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+    depends_on: [hub]
+
+volumes:
+  hub-data:
+  caddy-data:

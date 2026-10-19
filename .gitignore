@@ -35,3 +35,7 @@ dist-desktop/
 # ArchMAP analysis cache (archmap hub-report / analyze)
 .archmap/
 .codeatlas/
+
+# Arch line: tokens gerados localmente (scripts/arch-line-setup.sh) e .env do deploy
+.arch-line/
+deploy/self-host/.env
