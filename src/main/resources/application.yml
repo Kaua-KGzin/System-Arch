@@ -17,6 +17,11 @@ archhub:
   persistence:
     enabled: true
     file: data/systems.json
+  # The Hub lists itself as "arch-hub", the target of every system's connectsTo.
+  self-register:
+    enabled: true
+    # Address other machines use to reach the Hub. Empty = http://localhost:<port>.
+    public-url: ${ARCHHUB_PUBLIC_URL:}
 
 management:
   endpoints:

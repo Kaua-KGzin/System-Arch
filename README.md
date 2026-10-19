@@ -50,6 +50,24 @@ mvn spring-boot:run
 - **Pacotes nativos** (Windows `.exe`, macOS `.dmg`, Linux `.deb`/portátil),
   com JRE embutida — quem for só usar não precisa instalar Java.
 
+## Linha Arch
+
+O Hub é a peça `platform` da **linha Arch**. O contrato que todos os sistemas
+seguem (variáveis `ARCHHUB_*`, ciclo registro → heartbeat, papéis, portas e o
+manifesto `arch.json`) está em [`docs/ARCH-LINE.md`](docs/ARCH-LINE.md).
+
+| Sistema | Papel | |
+|---|---|---|
+| [Arch Hub](https://github.com/Kaua-KGzin/System-Arch) | platform | catálogo central e status da linha |
+| [ARCHNEXUS / System-PVD](https://github.com/Kaua-KGzin/System-PVD) | business | ERP & PDV |
+| [SIMPLE ArCh](https://github.com/Kaua-KGzin/SIMPLE-ArCh) | collaboration | boards e tasks com sync GitHub |
+| [ArchMAP](https://github.com/Kaua-KGzin/ArchMAP) | insight | análise estática de arquitetura |
+
+System-PVD, SIMPLE-ArCh e ArchMAP já trazem o adaptador pronto: basta definir
+`ARCHHUB_URL` neles. O próprio Hub se registra como `arch-hub` ao subir
+(desligue com `archhub.self-register.enabled=false`; defina `ARCHHUB_PUBLIC_URL`
+se outras máquinas o acessam por outro endereço).
+
 ## Como um sistema se conecta ao Hub
 
 Qualquer sistema do ecossistema (System-PVD, ArchMAP, SIMPLE-ArCh, ou um
@@ -216,9 +234,9 @@ scripts/
 
 ## Próximos passos (roadmap)
 
-- Adaptadores de registro automático para os demais repositórios
-  (`System-PVD`, `ArchMAP`, `SIMPLE-ArCh`) disparando o `POST` de
-  registro na própria inicialização de cada um.
+- ~~Adaptadores de registro automático para os demais repositórios~~ —
+  feito, ver [`docs/ARCH-LINE.md`](docs/ARCH-LINE.md).
+- Score de arquitetura do ArchMAP publicado no registro de cada sistema.
 - Webhooks/notificações externas quando um sistema muda de status.
 - Autenticação por sistema (um token por serviço, não apenas um segredo global).
 - Trocar o snapshot em disco por um banco leve (ex. H2/SQLite) se o
