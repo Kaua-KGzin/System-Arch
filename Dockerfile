@@ -1,7 +1,7 @@
 # Arch Hub — imagem da plataforma da linha Arch.
 #   docker build -t arch-hub .
 #   docker run -p 8080:8080 -v arch-hub-data:/app/data arch-hub
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-26 AS build
 WORKDIR /src
 COPY pom.xml .
 RUN mvn -q -B dependency:go-offline
